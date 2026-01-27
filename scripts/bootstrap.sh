@@ -15,29 +15,60 @@ if [ ! -f "$CONFIG_FILE" ]; then
     TOKEN="$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")"
   fi
 
-# Resolve bind address
-# The clawdbot JSON config expects a valid IP address for 'bind'.
-# We hardcode 0.0.0.0 here so it listens on all interfaces inside the container.
-# External binding is controlled by CLAWDBOT_GATEWAY_BIND=lan in docker-compose.yaml.
-BIND_ADDR="0.0.0.0"
 
 cat >"$CONFIG_FILE" <<EOF
 {
   "gateway": {
-    "mode": "local",
-    "bind": "$BIND_ADDR",
     "port": 18789,
+    "mode": "local",
+    "bind": "0.0.0.0",
     "auth": {
       "mode": "token",
       "token": "$TOKEN"
     },
+    "trustedProxies": [
+      "*"
+    ],
     "tailscale": {
-      "mode": "off"
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "skills": {
+    "install": {
+      "nodeManager": "npm"
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": {
+          "enabled": true
+        },
+        "command-logger": {
+          "enabled": true
+        },
+        "session-memory": {
+          "enabled": true
+        }
+      }
     }
   },
   "agents": {
     "defaults": {
-      "workspace": "/home/node/clawd"
+      "workspace": "/home/node/clawd",
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8
+      }
     }
   }
 }
@@ -47,7 +78,7 @@ else
 fi
 
 # Resolve public URL (Coolify injects SERVICE_URL_CLAWDBOT_18789 or SERVICE_FQDN_CLAWDBOT)
-BASE_URL="${SERVICE_URL_CLAWDBOT_18789:-https://$SERVICE_FQDN_CLAWDBOT}"
+BASE_URL="${SERVICE_URL_CLAWDBOT_18789:-${SERVICE_FQDN_CLAWDBOT:+https://$SERVICE_FQDN_CLAWDBOT}}"
 BASE_URL="${BASE_URL:-http://localhost:18789}"
 
 if [ "${CLAWDBOT_PRINT_ACCESS:-1}" = "1" ]; then
