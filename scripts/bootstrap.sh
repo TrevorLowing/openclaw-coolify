@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 set -e
 
-STATE_DIR="/home/node/.clawdbot"
-CONFIG_FILE="$STATE_DIR/clawdbot.json"
-WORKSPACE_DIR="/home/node/clawd"
+STATE_DIR="/home/node/.moltbot"
+CONFIG_FILE="$STATE_DIR/moltbot.json"
+# We don't migrate clawdbot.json automatically here because volume names changed, 
+# so it's a fresh start for the new volume.
+WORKSPACE_DIR="/home/node/molt"
 
 mkdir -p "$STATE_DIR" "$WORKSPACE_DIR"
+
+# Ensure aliases work for interactive sessions
+echo "alias fd=fdfind" >> /home/node/.bashrc
+echo "alias bat=batcat" >> /home/node/.bashrc
+echo "alias ll='ls -alF'" >> /home/node/.bashrc
 
 # Generate config on first boot
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -80,13 +87,17 @@ cat >"$CONFIG_FILE" <<EOF
   },
   "agents": {
     "defaults": {
-      "workspace": "/home/node/clawd",
+      "workspace": "/home/node/molt",
       "compaction": {
         "mode": "safeguard"
       },
       "maxConcurrent": 4,
       "subagents": {
         "maxConcurrent": 8
+      },
+      "sandbox": {
+        "mode": "non-main",
+        "scope": "session"
       }
     }
   },
@@ -99,8 +110,14 @@ cat >"$CONFIG_FILE" <<EOF
     "ackReactionScope": "group-mentions"
   },
   "commands": {
-    "native": "auto",
-    "nativeSkills": "auto"
+    "native": true,
+    "nativeSkills": true,
+    "text": true,
+    "bash": true,
+    "config": true,
+    "debug": true,
+    "restart": true,
+    "useAccessGroups": true
   },
   "hooks": {
     "enabled": true,
@@ -141,7 +158,7 @@ cat >"$CONFIG_FILE" <<EOF
     }
   },
   "skills": {
-    "allowBundled": [],
+    "allowBundled": ["*"],
     "install": {
       "nodeManager": "npm"
     }
@@ -177,14 +194,14 @@ else
   TOKEN="$(jq -r '.gateway.auth.token' "$CONFIG_FILE")"
 fi
 
-# Resolve public URL (Coolify injects SERVICE_URL_CLAWDBOT_18789 or SERVICE_FQDN_CLAWDBOT)
-BASE_URL="${SERVICE_URL_CLAWDBOT_18789:-${SERVICE_FQDN_CLAWDBOT:+https://$SERVICE_FQDN_CLAWDBOT}}"
+# Resolve public URL (Coolify injects SERVICE_URL_MOLTBOT_18789 or SERVICE_FQDN_MOLTBOT)
+BASE_URL="${SERVICE_URL_MOLTBOT_18789:-${SERVICE_FQDN_MOLTBOT:+https://$SERVICE_FQDN_MOLTBOT}}"
 BASE_URL="${BASE_URL:-http://localhost:18789}"
 
 if [ "${CLAWDBOT_PRINT_ACCESS:-1}" = "1" ]; then
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "🦞 CLAWDBOT READY"
+  echo "🦞 MOLTBOT READY"
   echo ""
   echo "Dashboard:"
   echo "$BASE_URL/?token=$TOKEN"
@@ -195,4 +212,5 @@ if [ "${CLAWDBOT_PRINT_ACCESS:-1}" = "1" ]; then
   echo ""
 fi
 
-exec node dist/index.js gateway
+# Run the moltbot gateway using the global binary
+exec moltbot gateway

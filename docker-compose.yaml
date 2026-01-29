@@ -1,35 +1,86 @@
 services:
-  clawdbot:
+  moltbot:
     build: .
-    user: '0:0'
+    user: 'node'
     restart: on-failure:3
     ulimits:
       nofile:
         soft: 65535
         hard: 65535
+    env_file:
+      - .env
     environment:
       PORT: 18789
       NODE_ENV: production
-      NODE_OPTIONS: '--max-old-space-size=1536'
+      NODE_OPTIONS: '--max-old-space-size=4096'
       HOME: /home/node
       TERM: xterm-256color
-      CLAWDBOT_GATEWAY_BIND: auto
-      CLAWDBOT_GATEWAY_PORT: 18789
+      
+      # Map Moltbot vars to internal Clawdbot vars
+      CLAWDBOT_GATEWAY_BIND: ${MOLTBOT_GATEWAY_BIND:-auto}
+      CLAWDBOT_GATEWAY_PORT: ${MOLTBOT_GATEWAY_PORT:-18789}
+      # Tell the binary where to look for state/config
+      CLAWDBOT_STATE_DIR: /home/node/.moltbot
+      CLAWDBOT_WORKSPACE: /home/node/molt
 
-      SERVICE_URL_CLAWDBOT_18789: null
-      BASE_URL: 'https://${SERVICE_FQDN_CLAWDBOT}'
-      PUBLIC_URL: 'https://${SERVICE_FQDN_CLAWDBOT}'
+      # API Keys injected from .env or Coolify
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MINIMAX_API_KEY: ${MINIMAX_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-${GOOGLE_API_KEY}}
+      KIMI_API_KEY: ${KIMI_API_KEY}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      
+      # Optional integrations
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      NANOBANANA_API_KEY: ${NANOBANANA_API_KEY}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+
+      SERVICE_URL_MOLTBOT_18789: null
+      BASE_URL: 'https://${SERVICE_FQDN_MOLTBOT}'
+      PUBLIC_URL: 'https://${SERVICE_FQDN_MOLTBOT}'
       # Bootstrap controls
       CLAWDBOT_AUTO_BOOTSTRAP: "1"
       CLAWDBOT_PRINT_ACCESS: "1"
       GATEWAY_TRUSTED_PROXIES: '[*]'
+      # Docker Socket Proxy
+      DOCKER_HOST: tcp://docker-proxy:2375
+      # Public URL Access
+      CF_TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN}
+      # Deployment & Git
+      VERCEL_ORG_ID: ${VERCEL_ORG_ID}
+      VERCEL_PROJECT_ID: ${VERCEL_PROJECT_ID}
+      VERCEL_TOKEN: ${VERCEL_TOKEN}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_USERNAME: ${GITHUB_USERNAME}
 
     volumes:
-      - clawdbot-config:/home/node/.clawdbot
-      - clawdbot-workspace:/home/node/clawd
+      - moltbot-config:/home/node/.moltbot
+      - moltbot-workspace:/home/node/molt
+      # Secure: Socket mount removed in favor of proxy
+      # - /var/run/docker.sock:/var/run/docker.sock
+
+    depends_on:
+      - docker-proxy
 
     command: ["bash", "/app/scripts/bootstrap.sh"]
 
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      LOG_LEVEL: info
+      # Security: Only enable necessary Docker APIs
+      POST: 1       # Create containers
+      CONTAINERS: 1 # List/manage containers
+      IMAGES: 1     # Pull images
+      NETWORKS: 1   # Connect to networks
+      INFO: 1       # Version check
+      VERSION: 1
+      EVENTS: 1     # Listen for events (if needed)
+
 volumes:
-  clawdbot-config:
-  clawdbot-workspace:
+  moltbot-config:
+  moltbot-workspace:
