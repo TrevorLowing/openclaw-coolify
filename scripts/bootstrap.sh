@@ -29,6 +29,22 @@ echo "alias bat=batcat" >> /home/node/.bashrc
 echo "alias ll='ls -alF'" >> /home/node/.bashrc
 echo "alias molty='moltbot'" >> /home/node/.bashrc
 echo "alias clawd='moltbot'" >> /home/node/.bashrc
+echo "alias molt-approve='moltbot-approve'" >> /home/node/.bashrc
+
+# Utility to auto-approve all pending device requests
+moltbot-approve() {
+  echo "🔎 Checking for pending device requests..."
+  local ids=$(moltbot devices list --json | jq -r '.pending[].id' 2>/dev/null)
+  if [ -z "$ids" ]; then
+    echo "✅ No pending requests found."
+    return 0
+  fi
+  for id in $ids; do
+    echo "🚀 Approving request: $id"
+    moltbot devices approve "$id"
+  done
+}
+export -f moltbot-approve
 
 # Generate config on first boot
 if [ ! -f "$CONFIG_FILE" ]; then
