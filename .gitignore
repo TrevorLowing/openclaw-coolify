@@ -1,1 +1,10 @@
-# docs/
+# Secrets
+.env
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Build
+.next/
+dist/
