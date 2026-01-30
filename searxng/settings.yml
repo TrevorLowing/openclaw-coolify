@@ -15,3 +15,15 @@ search:
   formats:
     - html
     - json
+engines:
+  - name: google
+    disabled: true
+
+  - name: duckduckgo
+    disabled: true
+
+  - name: bing
+    disabled: true
+
+  - name: brave
+    disabled: true
