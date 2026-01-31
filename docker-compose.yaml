@@ -7,6 +7,12 @@ services:
     environment:
       REGISTRY_HTTP_SECRET: ${SERVICE_BASE64_REGISTRY}
   openclaw:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openclaw.entryPoints=https"
+      - "traefik.http.routers.openclaw.rule=Host(`{{.Service.Fqdn}}`)"
+      - "traefik.http.services.openclaw.loadbalancer.server.port=18789"
+      - "traefik.http.routers.openclaw.tls.certresolver=letsencrypt"
     build:
       context: .
       args:
