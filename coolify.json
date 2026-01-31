@@ -1,10 +1,10 @@
 {
-    "name": "Moltbot – Connected Agentic Coding",
+    "name": "OpenClaw – Connected Agentic Coding",
     "description": "Run your own production-grade agentic coding assistant. Supports MiniMax, Claude, Gemini, and more. One-click deploy on Coolify.",
     "version": "1.0.0",
     "services": [
         {
-            "name": "moltbot",
+            "name": "OpenClaw",
             "type": "docker-compose",
             "dockerComposeFile": "docker-compose.yaml"
         }
@@ -14,7 +14,7 @@
         "agent",
         "coding",
         "minimax",
-        "moltbot",
+        "openclaw",
         "self-hosted"
     ],
     "documentation": "https://docs.molt.bot/",
