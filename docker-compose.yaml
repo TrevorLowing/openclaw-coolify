@@ -7,6 +7,12 @@ services:
     environment:
       REGISTRY_HTTP_SECRET: ${SERVICE_BASE64_REGISTRY}
   openclaw:
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:18789/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s  
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.openclaw.entryPoints=https"
